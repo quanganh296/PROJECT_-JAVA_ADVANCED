@@ -4,6 +4,7 @@ import com.meeting.dao.*;
 import com.meeting.model.*;
 import com.meeting.util.ValidationUtil;
 
+
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -88,6 +89,9 @@ public class EmployeeMenu {
 
     // 2. Chức năng đăng ký đặt phòng
     private void bookNewRoom() {
+
+        System.out.println("DANH SÁCH PHÒNG TRỐNG");
+        viewAvailableRooms();
         System.out.println("\n--- ĐẶT PHÒNG HỌP MỚI ---");
 
         // Nhập ID phòng và kiểm tra phòng
@@ -164,7 +168,26 @@ public class EmployeeMenu {
             System.out.println("\n[THÀNH CÔNG] Đã tạo đơn đặt phòng (ID: " + bookingId + ").");
 
             // Chọn thiết bị đi kèm
+            // Chọn thiết bị đi kèm
             System.out.println("\n--- CHỌN THIẾT BỊ DI ĐỘNG ---");
+            try {
+                // Hiển thị danh sách thiết bị có sẵn
+                List<Equipment> equipmentList = equipmentDAO.getAllEquipments(); // Đảm bảo EquipmentDAO của bạn có hàm này
+                if (equipmentList != null && !equipmentList.isEmpty()) {
+                    System.out.printf("| %-5s | %-25s |\n", "ID", "Tên thiết bị");
+                    System.out.println("-------------------------------------");
+                    for (Equipment eq : equipmentList) {
+                        System.out.printf("| %-5d | %-25s |\n", eq.getEquipmentId(), eq.getEquipmentName());
+                    }
+                    System.out.println("-------------------------------------");
+                } else {
+                    System.out.println("[THÔNG BÁO] Hiện hệ thống chưa có thiết bị di động nào.");
+                }
+            } catch (SQLException e) {
+                System.out.println("[LỖI DB] Không thể tải danh sách thiết bị: " + e.getMessage());
+            }
+
+            // Tiến hành nhập ID thiết bị
             while (true) {
                 int eqId = ValidationUtil.getInt("Nhập ID thiết bị (Nhập 0 để bỏ qua/hoàn tất): ", "Vui lòng nhập số!");
                 if (eqId == 0) break;
@@ -175,6 +198,24 @@ public class EmployeeMenu {
 
             // Chọn dịch vụ đi kèm
             System.out.println("\n--- CHỌN DỊCH VỤ ĐI KÈM ---");
+            try {
+                // Hiển thị danh sách dịch vụ có sẵn
+                List<Service> serviceList = serviceDAO.getAllServices(); // Đảm bảo ServiceDAO có hàm này
+                if (serviceList != null && !serviceList.isEmpty()) {
+                    System.out.printf("| %-5s | %-25s |\n", "ID", "Tên dịch vụ");
+                    System.out.println("-------------------------------------");
+                    for (Service sv : serviceList) {
+                        System.out.printf("| %-5d | %-25s |\n", sv.getServiceId(), sv.getServiceName());
+                    }
+                    System.out.println("-------------------------------------");
+                } else {
+                    System.out.println("[THÔNG BÁO] Hiện hệ thống chưa có dịch vụ đi kèm nào.");
+                }
+            } catch (SQLException e) {
+                System.out.println("[LỖI DB] Không thể tải danh sách dịch vụ: " + e.getMessage());
+            }
+
+            // Tiến hành nhập ID dịch vụ
             while (true) {
                 int svId = ValidationUtil.getInt("Nhập ID dịch vụ (Nhập 0 để bỏ qua/hoàn tất): ", "Vui lòng nhập số!");
                 if (svId == 0) break;

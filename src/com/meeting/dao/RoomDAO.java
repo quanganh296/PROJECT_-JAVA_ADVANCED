@@ -182,7 +182,7 @@ public class RoomDAO {
                     room.setCapacity(rs.getInt("capacity"));
                     room.setLocation(rs.getString("location"));
                     room.setStatus(rs.getString("status"));
-                    room.setFixedEquipment(rs.getString("fixed_equipments"));
+                    room.setFixedEquipment(rs.getString("fixed_equipment"));
 
                     return room; // Trả về đối tượng Room
                 }

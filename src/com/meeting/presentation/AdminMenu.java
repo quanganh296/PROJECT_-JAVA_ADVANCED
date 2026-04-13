@@ -23,7 +23,7 @@ public class AdminMenu {
             System.out.println("    HỆ THỐNG QUẢN LÝ DÀNH CHO ADMIN      ");
             System.out.println("=========================================");
             System.out.println("1. Quản lý Phòng họp");
-            System.out.println("2. Quản lý Thiết bị di động");
+            System.out.println("2. Quản lý Thiết bị");
             System.out.println("3. Quản lý Dịch vụ đi kèm");
             System.out.println("4. Duyệt & Phân công đơn đặt phòng");
             System.out.println("5. Tìm kiếm phòng họp theo tên");
@@ -187,7 +187,7 @@ public class AdminMenu {
     // --- SUB-MENU: QUẢN LÝ THIẾT BỊ DI ĐỘNG ---
     private void manageEquipments() {
         while (true) {
-            System.out.println("\n--- QUẢN LÝ THIẾT BỊ DI ĐỘNG ---");
+            System.out.println("\n--- QUẢN LÝ THIẾT BỊ ---");
             System.out.println("1. Xem danh sách thiết bị");
             System.out.println("2. Thêm thiết bị mới");
             System.out.println("3. Cập nhật thông tin thiết bị");

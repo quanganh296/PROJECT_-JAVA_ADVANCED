@@ -102,27 +102,27 @@ public class EquipmentDAO {
         return null;
     }
     // 5. Tìm thiết bị theo Name
-    public Equipment getEquipmentByName(String equipmentName) throws SQLException {
-        String sql = "SELECT * FROM equipments WHERE equipment_id = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, equipmentName);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                Equipment equipment = new Equipment();
-                equipment.setEquipmentId(rs.getInt("equipment_id"));
-                equipment.setEquipmentName(rs.getString("equipment_name"));
-                equipment.setTotalQuantity(rs.getInt("total_quantity"));
-                equipment.setAvailableQuantity(rs.getInt("available_quantity"));
-                equipment.setStatus(rs.getString("status"));
-
-                return equipment;
-            }
-        }
-
-        return null;
-    }
+//    public Equipment getEquipmentByName(String equipmentName) throws SQLException {
+//        String sql = "SELECT * FROM equipments WHERE equipment_id = ?";
+//
+//        try (Connection conn = DBConnection.getConnection();
+//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+//
+//            pstmt.setString(1, equipmentName);
+//            ResultSet rs = pstmt.executeQuery();
+//
+//            if (rs.next()) {
+//                Equipment equipment = new Equipment();
+//                equipment.setEquipmentId(rs.getInt("equipment_id"));
+//                equipment.setEquipmentName(rs.getString("equipment_name"));
+//                equipment.setTotalQuantity(rs.getInt("total_quantity"));
+//                equipment.setAvailableQuantity(rs.getInt("available_quantity"));
+//                equipment.setStatus(rs.getString("status"));
+//
+//                return equipment;
+//            }
+//        }
+//
+//        return null;
+//    }
 }

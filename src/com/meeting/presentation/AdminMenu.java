@@ -82,7 +82,7 @@ public class AdminMenu {
                     updateRoom();
                     break;
                 case 4:
-                    deleteRoom();
+                    handleDeletionMenu();
                     break;
                 case 0:
                     return; // Thoát Sub-menu
@@ -181,6 +181,72 @@ public class AdminMenu {
             }
         } else {
             System.out.println("Đã hủy thao tác xóa.");
+        }
+    }
+    // Giả sử đây là một phần trong switch-case của manageRooms() hoặc menu chính
+    private void handleDeletionMenu() {
+        System.out.println("\n=========================================");
+        System.out.println("           HỆ THỐNG XÓA DỮ LIỆU          ");
+        System.out.println("=========================================");
+        System.out.println("1. Xóa thông tin Phòng họp (Xóa vĩnh viễn phòng)");
+        System.out.println("2. Xóa Đơn đặt phòng đã duyệt (Hủy lịch họp)");
+        System.out.println("0. Quay lại");
+        System.out.println("=========================================");
+
+        int choice = ValidationUtil.getInt("Nhập lựa chọn của bạn: ", "Vui lòng nhập số!");
+
+        switch (choice)  {
+            case 1:
+                deleteRoom(); // Hàm xóa phòng cũ của bạn
+                break;
+            case 2:
+                handleDeleteApprovedBooking(); // Hàm xóa đơn đặt phòng đã duyệt
+                break;
+            case 0:
+                return;
+            default:
+                System.out.println("[LỖI] Lựa chọn không hợp lệ!");
+        }
+    }
+
+    // --- HÀM XÓA ĐƠN ĐẶT PHÒNG ĐÃ DUYỆT ---
+    private void handleDeleteApprovedBooking() {
+        // 1. Lấy danh sách đơn đã APPROVED
+        List<Booking> approvedList = bookingDAO.getAllApprovedBookings();
+
+        if (approvedList.isEmpty()) {
+            System.out.println("\n[THÔNG BÁO] Hiện không có đơn đặt phòng nào đã duyệt để xóa.");
+            return;
+        }
+
+        // 2. Hiển thị danh sách để Admin dễ chọn
+        System.out.println("\n--- DANH SÁCH ĐƠN ĐẶT PHÒNG ĐÃ DUYỆT (CÓ THỂ XÓA) ---");
+        System.out.printf("| %-5s | %-10s | %-20s | %-20s |\n", "ID", "Phòng ID", "Bắt đầu", "Kết thúc");
+        System.out.println("--------------------------------------------------------------------------");
+        for (Booking b : approvedList) {
+            System.out.printf("| %-5d | %-10d | %-20s | %-20s |\n",
+                    b.getBookingId(), b.getRoomId(), b.getStartTime(), b.getEndTime());
+        }
+        System.out.println("--------------------------------------------------------------------------");
+
+        // 3. Nhập ID và thực hiện xóa
+        int idToDelete = ValidationUtil.getInt("Nhập ID đơn muốn xóa (Nhập 0 để hủy): ", "Vui lòng nhập số!");
+        if (idToDelete == 0) return;
+
+        // Kiểm tra xem ID nhập vào có đúng là đơn đã duyệt không
+        boolean exists = approvedList.stream().anyMatch(b -> b.getBookingId() == idToDelete);
+        if (!exists) {
+            System.out.println("[LỖI] ID không hợp lệ hoặc đơn này chưa được duyệt!");
+            return;
+        }
+
+        boolean confirmed = ValidationUtil.getString("Bạn có chắc chắn muốn xóa đơn đặt phòng #" + idToDelete + "? (y/n): ").equalsIgnoreCase("y");
+        if (confirmed) {
+            if (bookingDAO.deleteBooking(idToDelete)) {
+                System.out.println("[THÀNH CÔNG] Đã xóa đơn đặt phòng.");
+            } else {
+                System.out.println("[LỖI] Không thể xóa đơn. Vui lòng kiểm tra lại liên kết dữ liệu (Foreign Key).");
+            }
         }
     }
 

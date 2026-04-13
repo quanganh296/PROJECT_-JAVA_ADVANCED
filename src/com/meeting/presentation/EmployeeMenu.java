@@ -33,7 +33,7 @@ public class EmployeeMenu {
             System.out.println("   HỆ THỐNG ĐẶT PHÒNG HỌP (NHÂN VIÊN)    ");
             System.out.println("=========================================");
             System.out.println("1. Đặt phòng họp mới");
-            System.out.println("2. Xem lịch sử đặt phòng của tôi");
+            System.out.println("2. Xem lịch họp sắp tới");
             System.out.println("3. Hủy đơn đặt phòng");
             System.out.println("4. Quản lý hồ sơ cá nhân");
             System.out.println("0. Đăng xuất");
@@ -46,7 +46,7 @@ public class EmployeeMenu {
                     bookNewRoom();
                     break;
                 case 2:
-                    viewMyBookings();
+                    viewUpcomingMeetings();
                     break;
                 case 3:
                     cancelPendingBooking();
@@ -314,6 +314,33 @@ public class EmployeeMenu {
         } else {
             System.out.println("Đã hủy thao tác.");
         }
+    }
+// Xem lich hop cua ban than
+    private void viewUpcomingMeetings() {
+        List<Booking> upcoming = bookingDAO.getUpcomingApprovedBookings(currentUserId);
+        if (upcoming.isEmpty()) {
+            System.out.println("\n[THÔNG BÁO] Bạn không có lịch họp nào sắp tới đã được duyệt.");
+            return;
+        }
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        System.out.println("\n--- LỊCH HỌP SẮP TỚI CỦA BẠN (ĐÃ DUYỆT) ---");
+        System.out.printf("| %-5s | %-20s | %-18s | %-18s |\n", "ID", "Phòng", "Thời gian bắt đầu", "Trạng thái chuẩn bị");
+        System.out.println("-".repeat(75));
+
+        for (Booking b : upcoming) {
+            try {
+                String roomName = roomDAO.getRoomById(b.getRoomId()).getRoomName();
+                System.out.printf("| %-5d | %-20s | %-18s | %-18s |\n",
+                        b.getBookingId(),
+                        roomName,
+                        b.getStartTime().format(dtf),
+                        (b.getPrepStatus() == null ? "Đang chờ hỗ trợ" : b.getPrepStatus()));
+            } catch (SQLException e) {
+                System.out.println("Lỗi hiển thị phòng: " + e.getMessage());
+            }
+        }
+        System.out.println("-".repeat(75));
     }
 
 

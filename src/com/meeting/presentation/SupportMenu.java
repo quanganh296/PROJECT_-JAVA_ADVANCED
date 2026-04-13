@@ -1,28 +1,32 @@
 package com.meeting.presentation;
 
 import com.meeting.model.Booking;
+import com.meeting.model.BookingEquipment;
+import com.meeting.model.BookingService;
 import com.meeting.service.SupportService;
 import com.meeting.util.ValidationUtil;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SupportMenu {
 
     private final SupportService supportService = new SupportService();
     private final int currentUserId;
+    private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public SupportMenu(int userId) {
         this.currentUserId = userId;
     }
 
-    // 1. HÀM HIỂN THỊ MENU (Vòng lặp giữ user ở lại)
     public void displayMenu() {
         while (true) {
             System.out.println("\n=========================================");
             System.out.println("  HỆ THỐNG QUẢN LÝ (NHÂN VIÊN HỖ TRỢ)    ");
             System.out.println("=========================================");
-            System.out.println("1. Xem danh sách công việc & Cập nhật trạng thái");
+            System.out.println("1. Danh sách booking được phân công");
             System.out.println("0. Đăng xuất");
             System.out.println("=========================================");
 
@@ -30,72 +34,87 @@ public class SupportMenu {
 
             switch (choice) {
                 case 1:
-                    handleTaskUpdate(); // Gọi hàm xử lý công việc
+                    handleTaskUpdate();
                     break;
                 case 0:
                     System.out.println("[THÔNG BÁO] Đã đăng xuất khỏi tài khoản Support.");
-                    return; // Thoát vòng lặp, quay về AuthMenu
+                    return;
                 default:
                     System.out.println("[LỖI] Lựa chọn không hợp lệ!");
             }
         }
     }
 
-    // 2. HÀM XỬ LÝ CÔNG VIỆC
     private void handleTaskUpdate() {
-        System.out.println("\n--- DANH SÁCH CÔNG VIỆC ĐƯỢC PHÂN CÔNG ---");
+        // 1. Lấy danh sách task từ Service
+        List<Booking> allTasks = supportService.getAssignedTasks(currentUserId);
 
-        // 1. Lấy danh sách task
-        List<Booking> tasks = supportService.getAssignedTasks(currentUserId);
-        if (tasks.isEmpty()) {
-            System.out.println("[THÔNG BÁO] Bạn không có công việc nào chưa hoàn tất.");
+        // 2. Lọc: Chỉ lấy đơn CHƯA HOÀN TẤT (prepStatus khác 'READY') và Sắp xếp theo thời gian bắt đầu
+        List<Booking> incompleteTasks = allTasks.stream()
+                .filter(b -> !"READY".equalsIgnoreCase(b.getPrepStatus()))
+                .sorted(Comparator.comparing(Booking::getStartTime))
+                .collect(Collectors.toList());
+
+        if (incompleteTasks.isEmpty()) {
+            System.out.println("\n[THÔNG BÁO] Tuyệt vời! Bạn không có công việc nào chưa hoàn tất.");
             return;
         }
 
-        // 2. Hiển thị bảng danh sách (Rút gọn để dễ nhìn)
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        System.out.println("--------------------------------------------------------------------------------");
-        System.out.printf("| %-5s | %-15s | %-20s | %-15s |\n", "ID", "Phòng", "Thời gian bắt đầu", "Trạng thái hiện tại");
-        System.out.println("--------------------------------------------------------------------------------");
-        for (Booking b : tasks) {
-            System.out.printf("| %-5d | %-15s | %-20s | %-15s |\n",
-                    b.getBookingId(), "ID: " + b.getRoomId(), b.getStartTime().format(dtf), b.getPrepStatus());
-        }
-        System.out.println("--------------------------------------------------------------------------------");
+        // 3. Hiển thị danh sách dạng bảng
+        System.out.println("\n--- DANH SÁCH CÔNG VIỆC CHƯA HOÀN TẤT (SẮP XẾP THEO NGÀY) ---");
+        String header = String.format("| %-5s | %-15s | %-16s | %-16s | %-18s |",
+                "ID", "Phòng (ID)", "Bắt đầu", "Kết thúc", "Trạng thái chuẩn bị");
+        System.out.println("-".repeat(header.length()));
+        System.out.println(header);
+        System.out.println("-".repeat(header.length()));
 
-        // 3. Chọn đơn để cập nhật
-        int bookingId = ValidationUtil.getInt("\nNhập ID đơn muốn cập nhật (Nhập 0 để quay lại): ", "ID phải là số!");
+        for (Booking b : incompleteTasks) {
+            System.out.printf("| %-5d | Phòng %-9d | %-16s | %-16s | %-18s |\n",
+                    b.getBookingId(),
+                    b.getRoomId(),
+                    b.getStartTime().format(dtf),
+                    b.getEndTime().format(dtf),
+                    (b.getPrepStatus() == null ? "CHƯA XỬ LÝ" : b.getPrepStatus()));
+        }
+        System.out.println("-".repeat(header.length()));
+
+        // 4. Chọn đơn để cập nhật
+        int bookingId = ValidationUtil.getInt("\nNhập ID đơn để xem chi tiết & cập nhật (Nhập 0 để quay lại): ", "Vui lòng nhập số!");
         if (bookingId == 0) return;
 
-        // KIỂM TRA BẢO MẬT: Đảm bảo ID nhập vào nằm trong danh sách tasks của nhân viên này
-        Booking selectedBooking = tasks.stream()
-                .filter(t -> t.getBookingId() == bookingId)
+        // Kiểm tra ID nhập vào có nằm trong danh sách được phân công không
+        Booking selected = incompleteTasks.stream()
+                .filter(b -> b.getBookingId() == bookingId)
                 .findFirst()
                 .orElse(null);
 
-        if (selectedBooking == null) {
-            System.out.println("[LỖI] ID đơn không hợp lệ hoặc không thuộc phạm vi quản lý của bạn!");
+        if (selected == null) {
+            System.out.println("[LỖI] ID đơn không hợp lệ hoặc đơn này đã hoàn tất!");
             return;
         }
 
-        // 4. Hiển thị chi tiết thiết bị & dịch vụ cần chuẩn bị
-        System.out.println("\n>>> CHI TIẾT YÊU CẦU CHO ĐƠN #" + bookingId);
-        System.out.println("-------------------------------------------");
+        showDetailAndWriteStatus(bookingId);
+    }
 
-        System.out.println("[1] THIẾT BỊ DI ĐỘNG CẦN MANG ĐẾN:");
-        var equipments = supportService.getBookingEquipments(bookingId);
-        if (equipments.isEmpty()) System.out.println("    - Không có thiết bị yêu cầu.");
-        else equipments.forEach(e -> System.out.println("    + Mã thiết bị: " + e.getEquipmentId() + " | Số lượng: " + e.getQuantity()));
+    private void showDetailAndWriteStatus(int bookingId) {
+        System.out.println("\n--- CHI TIẾT YÊU CẦU TRANG THIẾT BỊ & DỊCH VỤ ---");
 
+        // Hiển thị thiết bị
+        System.out.println("[1] THIẾT BỊ DI ĐỘNG:");
+        List<BookingEquipment> eqs = supportService.getBookingEquipments(bookingId);
+        if (eqs.isEmpty()) System.out.println("    - Không có thiết bị yêu cầu.");
+        else eqs.forEach(e -> System.out.println("    + Mã thiết bị: " + e.getEquipmentId() + " | Số lượng: " + e.getQuantity()));
+
+        // Hiển thị dịch vụ
         System.out.println("[2] DỊCH VỤ ĐI KÈM:");
-        var services = supportService.getBookingServices(bookingId);
-        if (services.isEmpty()) System.out.println("    - Không có dịch vụ yêu cầu.");
-        else services.forEach(s -> System.out.println("    + Mã dịch vụ: " + s.getServiceId() + " | Số lượng: " + s.getQuantity()));
+        List<BookingService> svs = supportService.getBookingServices(bookingId);
+        if (svs.isEmpty()) System.out.println("    - Không có dịch vụ yêu cầu.");
+        else svs.forEach(s -> System.out.println("    + Mã dịch vụ: " + s.getServiceId() + " | Số lượng: " + s.getQuantity()));
 
-        // 5. Cập nhật trạng thái chuẩn bị (Phòng & Thiết bị)
-        System.out.println("\n--- CẬP NHẬT TIẾN ĐỘ CHUẨN BỊ ---");
+        // 5. Cập nhật trạng thái chuẩn bị
+        System.out.println("\n--- CẬP NHẬT TIẾN ĐỘ ---");
         System.out.println("1. Đang thực hiện (PREPARING)");
-        System.out.println("2. Đã sẵn sàng (READY) - Đã xong cả phòng và thiết bị");
+        System.out.println("2. Đã sẵn sàng (READY) - Hoàn tất");
         System.out.println("3. Thiếu thiết bị (MISSING_EQUIPMENT)");
         System.out.println("0. Quay lại");
 
@@ -108,11 +127,10 @@ public class SupportMenu {
             default: return;
         }
 
-        // 6. Lưu vào DB
         if (supportService.updatePrepStatus(bookingId, status)) {
-            System.out.println("[THÀNH CÔNG] Đã cập nhật trạng thái đơn #" + bookingId + " thành: " + status);
+            System.out.println("[THÀNH CÔNG] Đã cập nhật trạng thái đơn #" + bookingId);
         } else {
-            System.out.println("[THẤT BẠI] Lỗi kết nối Database.");
+            System.out.println("[LỖI] Không thể cập nhật trạng thái.");
         }
     }
 }

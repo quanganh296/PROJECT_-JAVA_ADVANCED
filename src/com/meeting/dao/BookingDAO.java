@@ -240,4 +240,52 @@ public class BookingDAO {
             return false;
         }
     }
+
+    // 1. Lấy danh sách tất cả các đơn đã được duyệt (dành cho Admin)
+    public List<Booking> getAllApprovedBookings() {
+        List<Booking> list = new ArrayList<>();
+        String sql = "SELECT * FROM bookings WHERE booking_status = 'APPROVED'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(extractBookingFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Lỗi lấy danh sách đơn đã duyệt: " + e.getMessage());
+        }
+        return list;
+    }
+
+    // 2. Xóa đơn đặt phòng (Admin)
+    public boolean deleteBooking(int bookingId) {
+        // Lưu ý: Nếu DB không để ON DELETE CASCADE, bạn cần xóa ở bảng booking_equipment và booking_services trước
+        String sql = "DELETE FROM bookings WHERE booking_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, bookingId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Lỗi khi xóa đơn đặt phòng: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // 3. Lấy lịch họp sắp tới đã được duyệt (dành cho Employee)
+    public List<Booking> getUpcomingApprovedBookings(int employeeId) {
+        List<Booking> list = new ArrayList<>();
+        // Lấy các đơn APPROVED và thời gian bắt đầu lớn hơn hiện tại
+        String sql = "SELECT * FROM bookings WHERE employee_id = ? AND booking_status = 'APPROVED' AND start_time > NOW() ORDER BY start_time ASC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                list.add(extractBookingFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Lỗi lấy lịch họp sắp tới: " + e.getMessage());
+        }
+        return list;
+    }
 }

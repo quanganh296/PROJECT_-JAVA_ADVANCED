@@ -126,4 +126,23 @@ public class ValidationUtil {
 //        char[] passwordArray = console.readPassword(message);
 //        return new String(passwordArray);
 //    }
+
+    public static LocalDateTime getDateTime(String prompt) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        while (true) {
+            System.out.print(prompt);
+            String input = sc.nextLine().trim();
+            if (input.isEmpty()) {
+                System.out.println("Lỗi: Không được để trống. Vui lòng nhập lại!");
+                continue;
+            }
+            try {
+                // Ép kiểu chuỗi người dùng nhập thành LocalDateTime
+                return LocalDateTime.parse(input, dtf);
+            } catch (DateTimeParseException e) {
+                System.out.println("Lỗi: Định dạng ngày giờ không hợp lệ!");
+                System.out.println("Vui lòng nhập đúng định dạng dd/MM/yyyy HH:mm (Ví dụ: 15/05/2026 14:30)");
+            }
+        }
+    }
 }

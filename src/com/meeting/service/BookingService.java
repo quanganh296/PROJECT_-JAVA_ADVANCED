@@ -43,15 +43,15 @@ public class BookingService {
 
      //Lấy danh sách việc làm cho nhân viên hỗ trợ
 
-    public List<Booking> getTasksForSupport(int staffId) {
-        return bookingDAO.getAssignedTasks(staffId);
-    }
+//    public List<Booking> getTasksForSupport(int staffId) {
+//        return bookingDAO.getAssignedTasks(staffId);
+//    }
 
 
      // Duyệt đơn và phân công nhân viên
 
-    public boolean approveAndAssign(int bookingId, int staffId) {
-        // Có thể thêm kiểm tra xem staffId đó có đúng là Role SUPPORT không ở đây
-        return bookingDAO.updateBookingStatusAndAssign(bookingId, "APPROVED", staffId);
-    }
+//    public boolean approveAndAssign(int bookingId, int staffId) {
+//        // Có thể thêm kiểm tra xem staffId đó có đúng là Role SUPPORT không ở đây
+//        return bookingDAO.updateBookingStatusAndAssign(bookingId, "APPROVED", staffId);
+//    }
 }

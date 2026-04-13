@@ -88,111 +88,104 @@ public class EmployeeMenu {
 
     // 2. Chức năng đăng ký đặt phòng
     private void bookNewRoom() {
-        System.out.println("\n --- DANH SÁCH PHÒNG HỌP CÒN TRỐNG ---");
-        viewAvailableRooms();
-        System.out.println("\n--- ĐĂNG KÝ ĐẶT PHÒNG ---");
-        try {
-            int roomId = ValidationUtil.getInt("Nhập ID phòng muốn đặt: ", "ID phải là số nguyên!");
+        System.out.println("\n--- ĐẶT PHÒNG HỌP MỚI ---");
 
-            // 1. Nhập và parse thời gian
-            String startStr = ValidationUtil.getString("Nhập thời gian bắt đầu (dd/MM/yyyy HH:mm): ");
-            String endStr = ValidationUtil.getString("Nhập thời gian kết thúc (dd/MM/yyyy HH:mm): ");
-
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            LocalDateTime startTime = LocalDateTime.parse(startStr, formatter);
-            LocalDateTime endTime = LocalDateTime.parse(endStr, formatter);
-
-            if (endTime.isBefore(startTime)) {
-                System.out.println("[LỖI] Thời gian kết thúc phải sau thời gian bắt đầu!");
+        // Nhập ID phòng và kiểm tra phòng
+        int roomId;
+        Room selectedRoom = null;
+        while (true) {
+            roomId = ValidationUtil.getInt("Nhập ID phòng muốn đặt: ", "Vui lòng nhập số!");
+            try {
+                selectedRoom = roomDAO.getRoomById(roomId);
+                if (selectedRoom == null) {
+                    System.out.println("[LỖI] Không tìm thấy phòng với ID này. Vui lòng nhập lại!");
+                } else {
+                    break;
+                }
+            } catch (SQLException e) {
+                System.out.println("[LỖI DB] Lỗi khi kiểm tra phòng: " + e.getMessage());
                 return;
             }
+        }
 
-            int participants = ValidationUtil.getInt("Nhập số lượng người tham gia: ", "Số lượng phải là số nguyên!");
-
-            // 2. Kiểm tra phòng trống
-            if (!bookingDAO.isRoomAvailable(roomId, startTime, endTime)) {
-                System.out.println(" [LỖI] Phòng này đã được đặt trong khoảng thời gian trên. Vui lòng chọn thời gian hoặc phòng khác!");
-                return;
-            }
-
-            // 3. Tạo đơn và lưu vào Database
-            Booking newBooking = new Booking();
-            newBooking.setRoomId(roomId);
-            newBooking.setEmployeeId(currentUserId);
-            newBooking.setStartTime(startTime);
-            newBooking.setEndTime(endTime);
-            newBooking.setParticipantsCount(participants);
-
-            // GỌI DAO ĐỂ TẠO ĐƠN & LẤY ID ĐƠN VỪA TẠO
-            int bookingId = bookingDAO.addBookingReturnId(newBooking);
-
-            if (bookingId > 0) {
-                System.out.println(" [THÀNH CÔNG] Đã tạo đơn đặt phòng (ID: " + bookingId + ") ở trạng thái PENDING.");
-
-                // ========================================================
-                // PHẦN THÊM THIẾT BỊ
-                // ========================================================
-                String addEq = ValidationUtil.getString("Bạn có muốn đặt thêm thiết bị di động (Máy chiếu, Laptop...) không? (Y/N): ");
-                if (addEq.equalsIgnoreCase("Y")) {
-                    System.out.println("\n--- DANH SÁCH THIẾT BỊ ---");
-                    List<Equipment> eqList = equipmentDAO.getAllEquipments();
-                    for (Equipment e : eqList) {
-                        System.out.println("ID: " + e.getEquipmentId() + " | Tên: " + e.getEquipmentName());
-                    }
-
-                    while (true) {
-                        int eqId = ValidationUtil.getInt("\nNhập ID thiết bị muốn thêm (0 để bỏ qua/dừng lại): ", "Lỗi");
-                        if (eqId == 0) break;
-
-                        int qty = ValidationUtil.getInt("Nhập số lượng: ", "Lỗi");
-
-                        try {
-                            com.meeting.model.BookingEquipment be = new com.meeting.model.BookingEquipment();
-                            be.setBookingId(bookingId);
-                            be.setEquipmentId(eqId);
-                            be.setQuantity(qty);
-                            bookingEquipmentDAO.addEquipmentToBooking(be);
-                            System.out.println(" Đã thêm thiết bị vào đơn!");
-                        } catch (Exception e) {
-                            System.out.println(" [LỖI] Không thể thêm thiết bị. Vui lòng kiểm tra lại ID.");
-                        }
-                    }
-                }
-
-                // ========================================================
-                // PHẦN THÊM DỊCH VỤ
-                // ========================================================
-                String addSv = ValidationUtil.getString("\nBạn có muốn đặt thêm dịch vụ (Nước suối, Teabreak) không? (Y/N): ");
-                if (addSv.equalsIgnoreCase("Y")) {
-                    System.out.println("\n--- DANH SÁCH DỊCH VỤ ---");
-                    List<Service> svList = serviceDAO.getAllServices();
-                    for (Service s : svList) {
-                        System.out.println("ID: " + s.getServiceId() + " | Tên: " + s.getServiceName() + " | Giá: " + s.getUnitPrice());
-                    }
-
-                    while (true) {
-                        int svId = ValidationUtil.getInt("\nNhập ID dịch vụ muốn thêm (0 để bỏ qua/dừng lại): ", "Lỗi");
-                        if (svId == 0) break;
-
-                        int qty = ValidationUtil.getInt("Nhập số lượng: ", "Lỗi");
-
-                        try {
-                            bookingServiceDAO.addServiceToBooking(new com.meeting.model.BookingService(bookingId, svId, qty));
-                            System.out.println(" Đã thêm dịch vụ vào đơn!");
-                        } catch (Exception e) {
-                            System.out.println(" [LỖI] Không thể thêm dịch vụ. Vui lòng kiểm tra lại ID.");
-                        }
-                    }
-                }
-
-                System.out.println("\n ĐÃ HOÀN TẤT TOÀN BỘ QUÁ TRÌNH ĐẶT PHÒNG VÀ DỊCH VỤ!");
-
+        // Nhập số lượng người và kiểm tra sức chứa
+        int participantsCount;
+        while (true) {
+            participantsCount = ValidationUtil.getInt("Nhập số lượng người tham gia: ", "Vui lòng nhập số!");
+            if (participantsCount <= 0) {
+                System.out.println("[LỖI] Số lượng người tham gia phải lớn hơn 0!");
+            } else if (participantsCount > selectedRoom.getCapacity()) {
+                System.out.println("[LỖI] Sức chứa của phòng này chỉ tối đa " + selectedRoom.getCapacity() + " người!");
+                System.out.println("Vui lòng nhập lại số lượng phù hợp nhé.");
             } else {
-                System.out.println(" [LỖI] Hệ thống không thể tạo đơn đặt phòng lúc này.");
+                break;
+            }
+        }
+
+        // Nhập thời gian và chặn đặt ở quá khứ
+        LocalDateTime startTime;
+        while (true) {
+            startTime = ValidationUtil.getDateTime("Nhập thời gian bắt đầu (dd/MM/yyyy HH:mm): ");
+            if (startTime.isBefore(LocalDateTime.now())) {
+                System.out.println("[LỖI] Thời gian bắt đầu không được ở trong quá khứ. Vui lòng nhập lại!");
+            } else {
+                break;
+            }
+        }
+
+        LocalDateTime endTime;
+        while (true) {
+            endTime = ValidationUtil.getDateTime("Nhập thời gian kết thúc (dd/MM/yyyy HH:mm): ");
+            if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
+                System.out.println("[LỖI] Thời gian kết thúc phải diễn ra sau thời gian bắt đầu. Vui lòng nhập lại!");
+            } else {
+                break;
+            }
+        }
+
+        // Kiểm tra trùng lịch
+        if (!bookingDAO.isRoomAvailable(roomId, startTime, endTime)) {
+            System.out.println("[LỖI] Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn giờ/phòng khác!");
+            return;
+        }
+
+        // Lưu đơn đặt phòng (Mặc định trạng thái PENDING)
+        Booking newBooking = new Booking();
+        newBooking.setRoomId(roomId);
+        newBooking.setEmployeeId(currentUserId);
+        newBooking.setStartTime(startTime);
+        newBooking.setEndTime(endTime);
+        newBooking.setParticipantsCount(participantsCount);
+        newBooking.setBookingStatus("PENDING");
+
+        int bookingId = bookingDAO.addBookingReturnId(newBooking);
+
+        if (bookingId > 0) {
+            System.out.println("\n[THÀNH CÔNG] Đã tạo đơn đặt phòng (ID: " + bookingId + ").");
+
+            // Chọn thiết bị đi kèm
+            System.out.println("\n--- CHỌN THIẾT BỊ DI ĐỘNG ---");
+            while (true) {
+                int eqId = ValidationUtil.getInt("Nhập ID thiết bị (Nhập 0 để bỏ qua/hoàn tất): ", "Vui lòng nhập số!");
+                if (eqId == 0) break;
+                int qty = ValidationUtil.getInt("Nhập số lượng: ", "Vui lòng nhập số!");
+                bookingEquipmentDAO.addEquipmentToBooking(new BookingEquipment());
+                System.out.println("Đã thêm thiết bị vào đơn!");
             }
 
-        } catch (Exception e) {
-            System.out.println(" [LỖI] Vui lòng nhập đúng định dạng ngày giờ dd/MM/yyyy HH:mm");
+            // Chọn dịch vụ đi kèm
+            System.out.println("\n--- CHỌN DỊCH VỤ ĐI KÈM ---");
+            while (true) {
+                int svId = ValidationUtil.getInt("Nhập ID dịch vụ (Nhập 0 để bỏ qua/hoàn tất): ", "Vui lòng nhập số!");
+                if (svId == 0) break;
+                int qty = ValidationUtil.getInt("Nhập số lượng: ", "Vui lòng nhập số!");
+                bookingServiceDAO.addServiceToBooking(new BookingService(bookingId, svId, qty));
+                System.out.println("Đã thêm dịch vụ vào đơn!");
+            }
+
+            System.out.println("\n[HOÀN TẤT] Yêu cầu đặt phòng #" + bookingId + " đã được gửi tới Admin chờ duyệt!");
+        } else {
+            System.out.println("[LỖI] Đặt phòng thất bại do lỗi CSDL.");
         }
     }
     // 3. Xem lịch sử đặt phòng của bản thân

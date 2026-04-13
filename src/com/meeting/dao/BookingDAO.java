@@ -288,4 +288,36 @@ public class BookingDAO {
         }
         return list;
     }
+
+    // Trả về int (chính là booking_id vừa được tạo), nếu lỗi trả về -1
+    public int insertBooking(Booking booking) {
+        String sql = "INSERT INTO bookings (room_id, employee_id, start_time, end_time, participants_count, booking_status) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            // Đảm bảo dữ liệu được ghi xuống đĩa ngay lập tức
+            conn.setAutoCommit(true);
+
+            pstmt.setInt(1, booking.getRoomId());
+            pstmt.setInt(2, booking.getEmployeeId());
+            pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(booking.getStartTime()));
+            pstmt.setTimestamp(4, java.sql.Timestamp.valueOf(booking.getEndTime()));
+            pstmt.setInt(5, booking.getParticipantsCount());
+            pstmt.setString(6, "PENDING");
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1); // Trả về ID vừa tạo (ví dụ: 7)
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Lỗi insertBooking: " + e.getMessage());
+        }
+        return -1;
+    }
 }

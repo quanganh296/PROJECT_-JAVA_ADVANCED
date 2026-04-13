@@ -78,36 +78,37 @@ public class RoomDAO {
         }
     }
 //Lấy danh sách phòng trống
-//    public List<Room> getAvailableRooms(LocalDateTime start, LocalDateTime end) {
-//        List<Room> availableRooms = new ArrayList<>();
-//        // SQL: Lấy tất cả phòng ngoại trừ những phòng có đơn đặt (không bị từ chối) trùng vào khoảng [start, end]
-//        String sql = "SELECT * FROM room WHERE room_id NOT IN (" +
-//                "    SELECT room_id FROM bookings " +
-//                "    WHERE booking_status != 'REJECTED' " +
-//                "    AND (start_time < ? AND end_time > ?)" +
-//                ")";
-//
-//        try (Connection conn = DBConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//
-//            pstmt.setTimestamp(1, Timestamp.valueOf(end));
-//            pstmt.setTimestamp(2, Timestamp.valueOf(start));
-//            ResultSet rs = pstmt.executeQuery();
-//
-//            while (rs.next()) {
-//                Room room = new Room();
-//                room.setRoomId(rs.getInt("room_id"));
-//                room.setRoomName(rs.getString("room_name"));
-//                room.setCapacity(rs.getInt("capacity"));
-//                room.setLocation(rs.getString("location"));
-//                room.setFixedEquipment(rs.getString("fixed_equipment"));
-//                availableRooms.add(room);
-//            }
-//        } catch (SQLException e) {
-//            System.out.println("Lỗi lấy danh sách phòng trống: " + e.getMessage());
-//        }
-//        return availableRooms;
-//    }
+// Lấy danh sách phòng trống trong một khoảng thời gian cụ thể
+public List<Room> getAvailableRooms(LocalDateTime startTime, LocalDateTime endTime) {
+    List<Room> list = new ArrayList<>();
+    // Logic: Lấy các phòng ACTIVE và KHÔNG NẰM TRONG danh sách các phòng bị trùng giờ
+    String sql = "SELECT * FROM room WHERE status = 'ACTIVE' AND room_id NOT IN (" +
+            "SELECT room_id FROM bookings WHERE booking_status IN ('PENDING', 'APPROVED') " +
+            "AND start_time < ? AND end_time > ?)";
+
+    try (Connection conn = DBConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        // Chú ý thứ tự truyền tham số: endTime trước, startTime sau (theo công thức trùng lịch)
+        pstmt.setTimestamp(1, java.sql.Timestamp.valueOf(endTime));
+        pstmt.setTimestamp(2, java.sql.Timestamp.valueOf(startTime));
+
+        ResultSet rs = pstmt.executeQuery();
+        while (rs.next()) {
+            Room room = new Room();
+            room.setRoomId(rs.getInt("room_id"));
+            room.setRoomName(rs.getString("room_name"));
+            room.setCapacity(rs.getInt("capacity"));
+            room.setLocation(rs.getString("location"));
+            room.setStatus(rs.getString("status"));
+            room.setFixedEquipment(rs.getString("fixed_equipment"));
+            list.add(room);
+        }
+    } catch (SQLException e) {
+        System.out.println("Lỗi tìm phòng trống: " + e.getMessage());
+    }
+    return list;
+}
 
     //Tìm kiếm phòng theo tên
     public List<Room> searchRoomsByName(String keyword) {

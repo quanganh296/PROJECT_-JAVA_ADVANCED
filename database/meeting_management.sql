@@ -105,10 +105,6 @@ FOREIGN KEY (support_staff_id) REFERENCES users(user_id),
 CONSTRAINT fk_room_booking FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE SET NULL
 );
 
-INSERT INTO bookings (room_id, employee_id, support_staff_id, start_time, end_time, participants_count, booking_status, prep_status)
-VALUES 
-(1, 3, 4, DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL '1 2' DAY_HOUR), 15, 'APPROVED', 'PREPARING'),
-(2, 3, 5, DATE_ADD(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL '3 2' DAY_HOUR), 10, 'APPROVED', 'PREPARING');
 
 
 ALTER TABLE bookings 
